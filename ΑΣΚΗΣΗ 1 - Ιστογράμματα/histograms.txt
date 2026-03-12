@@ -1,0 +1,26 @@
+Number of ages: 10104
+
+Equi-width histogram (count per bin with ranges):
+
+Bin 1 (0.0, 8.0): 445
+Bin 2 (8.0, 16.0): 132
+Bin 3 (16.0, 24.0): 1797
+Bin 4 (24.0, 32.0): 2337
+Bin 5 (32.0, 40.0): 1748
+Bin 6 (40.0, 48.0): 1615
+Bin 7 (48.0, 56.0): 1208
+Bin 8 (56.0, 64.0): 473
+Bin 9 (64.0, 72.0): 253
+Bin 10 (72.0, 80.0): 96
+
+Equi-depth histogram (boundaries and counts):
+
+Bin 1: max=18, count=1011
+Bin 2: max=22, count=1011
+Bin 3: max=26, count=1011
+Bin 4: max=29, count=1011
+Bin 5: max=33, count=1010
+Bin 6: max=37, count=1010
+Bin 7: max=42, count=1010
+Bin 8: max=48, count=1010
+Bin 9: max=54, count=1010
