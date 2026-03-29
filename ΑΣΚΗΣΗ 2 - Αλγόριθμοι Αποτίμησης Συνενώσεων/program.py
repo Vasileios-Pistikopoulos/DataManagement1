@@ -141,18 +141,23 @@ def airports_with_aircraft(aircraft_type):
                 routes.append((parts[5], ",".join(parts)))
 
     # Sort-merge join
-    airports_sorted = sorted(airports, key=lambda x: x[0])
+    airports
     routes_sorted = sorted(routes, key=lambda x: x[0])
 
     i = j = 0
     result = []
 
-    while i < len(airports_sorted) and j < len(routes_sorted):
-        airport_id = airports_sorted[i][0]
+    while i < len(airports) and j < len(routes_sorted):
+        airport_id = airports[i][0]
         route_dest = routes_sorted[j][0]
 
         if airport_id == route_dest:
-            result.append(airports_sorted[i][1])
+            result.append(airports[i][1])
+
+        # προχώρα όλα τα ίδια routes
+            while j < len(routes_sorted) and routes_sorted[j][0] == airport_id:
+                j += 1
+
             i += 1
         elif airport_id < route_dest:
             i += 1
@@ -254,6 +259,12 @@ def three_way_sort_merge_join(r, s, t):
 
 # MAIN
 if __name__ == "__main__":
+    
+    if len(sys.argv) < 2:
+        print("Usage: python script.py <aircraft_type>")
+        sys.exit(1)
+
+        aircraft_type = sys.argv[1]
 
     print("---- PART 2.1 TEST ----")
 
@@ -275,7 +286,7 @@ if __name__ == "__main__":
 
     print("\n---- PART 2.2 TEST ----")
 
-    aircraft_type = "CR2"
+    aircraft_type = sys.argv[1]
 
     result = airports_with_aircraft(aircraft_type)
 
