@@ -130,15 +130,15 @@ def airports_with_aircraft(aircraft_type):
         reader = csv.reader(f)
         for parts in reader:
             if parts[0] != "\\N":
-                airports.append((parts[0], ",".join(parts)))
+                airports.append((int(parts[0]), ",".join(parts)))
 
     # Φόρτωση routes και επιλογή τύπου
     routes = []
     with open("routes.dat", encoding="utf-8") as f:
         reader = csv.reader(f)
         for parts in reader:
-            if len(parts) > 8 and parts[5] != "\\N" and parts[8] == aircraft_type:
-                routes.append((parts[5], ",".join(parts)))
+            if len(parts) > 8 and parts[5] != "\\N" and aircraft_type in parts[8].strip():
+                routes.append((int(parts[5]), ",".join(parts)))
 
     # Sort-merge join
     airports
@@ -264,7 +264,8 @@ if __name__ == "__main__":
         print("Usage: python script.py <aircraft_type>")
         sys.exit(1)
 
-        aircraft_type = sys.argv[1]
+    
+    aircraft_type = sys.argv[1]
 
     print("---- PART 2.1 TEST ----")
 
