@@ -1,3 +1,5 @@
+#Vasileios Pistikopoulos 5336
+#Evagelos Vaitsis 5096
 import matplotlib.pyplot as plt
 
 def load_ages(filename="final_general.dat"):

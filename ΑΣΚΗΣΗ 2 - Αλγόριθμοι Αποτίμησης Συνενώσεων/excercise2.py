@@ -1,3 +1,5 @@
+#Vasileios Pistikopoulos 5336
+#Evagelos Vaitsis 5096
 import sys
 import csv
 

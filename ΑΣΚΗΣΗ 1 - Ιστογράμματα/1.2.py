@@ -1,3 +1,5 @@
+#Vasileios Pistikopoulos 5336
+#Evagelos Vaitsis 5096
 import re
 import sys
 #παραγει hist,ranges, boundaries και counts απο το αρχειο histograms.txt
