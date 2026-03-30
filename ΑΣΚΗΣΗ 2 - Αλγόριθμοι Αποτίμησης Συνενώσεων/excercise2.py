@@ -90,12 +90,10 @@ def hash_antisemijoin(r, s):
     return result
 
 
-# -----------------------------
 # LOAD DATA
-# -----------------------------
 
 def load_airports():
-    #Join key: parts[0] = ID αεροδρομίου (1ο πεδίο)
+    #Join key: parts[0] = ID αεροδρομίου 
     r = []
     with open("airports.dat", encoding="utf-8") as f:
         reader = csv.reader(f)
@@ -109,7 +107,7 @@ def load_airports():
 
 
 def load_routes():
-    #Join key: parts[5] = ID προορισμού (6ο πεδίο)
+    #Join key: parts[5] = ID προορισμού
     s = []
     with open("routes.dat", encoding="utf-8") as f:
         reader = csv.reader(f)
@@ -127,8 +125,7 @@ def load_routes():
 def airports_with_aircraft(aircraft_type):
     """
     Selection: routes με τον συγκεκριμένο τύπο αεροσκάφους (τελευταίο πεδίο)
-    Join key: airports parts[0], routes parts[5] (αριθμητικοί IDs)
-    Αλγόριθμος: sort-merge semijoin
+    Join key: airports parts[0], routes parts[5] (IDs)
     """
     
     airports = []
@@ -156,20 +153,16 @@ def airports_with_aircraft(aircraft_type):
 
     routes_sorted  = sorted(routes, key=lambda x: x[0])
 
-   # Χρησιμοποιώ την υλοποίηση sort-merge semijoin που έχω ορίσει παραπάνω
+   # Χρησιμοποιώ την sort-merge semijoin που έχω ορίσει παραπάνω
     return sort_merge_semijoin(airports, routes_sorted)
 
 
-# -----------------------------
 # PART 2.3 - PIPELINED MERGE JOIN
-# -----------------------------
 
 def pipelined_merge_join(r, s, t):
     """
     join(r,s) με pipeline: κάθε πλειάδα join(r,s) συνενώνεται
     αμέσως με t χωρίς αποθήκευση ενδιάμεσου αποτελέσματος.
-    Προϋπόθεση: r, s, t ταξινομημένα ως προς A.
-    Σχήματα: R(A,B), S(A,C), T(A,D) → F(A,B,C,D)
     """
     result = []
     i = j = k = 0
@@ -211,11 +204,6 @@ def pipelined_merge_join(r, s, t):
 # PART 2.3 - THREE-WAY SORT-MERGE JOIN
 
 def three_way_sort_merge_join(r, s, t):
-    """
-    Sort-merge join σε τρεις εισόδους ταυτόχρονα.
-    Προϋπόθεση: r, s, t ταξινομημένα ως προς A.
-    Σχήματα: R(A,B), S(A,C), T(A,D) → F(A,B,C,D)
-    """
     i = j = k = 0
     result = []
 
@@ -258,14 +246,10 @@ def three_way_sort_merge_join(r, s, t):
     return result
 
 
-# MAIN
-
 if __name__ == "__main__":
 
-    # ---- PART 2.1: test με μικρό παράδειγμα ----
-    print("=" * 50)
-    print("PART 2.1 - TEST")
-    print("=" * 50)
+    #PART 2.1: test 
+    print("PART 2.1 kanoume ena test")
     r_test = [(1,2),(1,4),(2,5)]
     s_test = [(1,'a'),(1,'c'),(3,'a')]
     print("r =", r_test)
@@ -275,35 +259,29 @@ if __name__ == "__main__":
     print("sort_merge_antisemijoin:", sort_merge_antisemijoin(r_test, s_test))
     print("hash_antisemijoin:      ", hash_antisemijoin(r_test, s_test))
 
-    # ---- PART 2.1: πραγματικά δεδομένα ----
+    #PART 2.1: πραγματικά δεδομένα
     print()
-    print("=" * 50)
-    print("PART 2.1 - REAL DATA")
-    print("=" * 50)
+    print("PART 2.1")
     airports = load_airports()
-    routes   = load_routes()
+    routes = load_routes()
     print(f"sort_merge_semijoin:     {len(sort_merge_semijoin(airports, routes))} αεροδρόμια")
     print(f"hash_semijoin:           {len(hash_semijoin(airports, routes))} αεροδρόμια")
     print(f"sort_merge_antisemijoin: {len(sort_merge_antisemijoin(airports, routes))} αεροδρόμια")
     print(f"hash_antisemijoin:       {len(hash_antisemijoin(airports, routes))} αεροδρόμια")
 
-    # ---- PART 2.2 ----
+    #PART 2.2
     print()
-    print("=" * 50)
-    print("PART 2.2 - SELECTION + SORT-MERGE SEMIJOIN")
-    print("=" * 50)
-    aircraft_type = sys.argv[1] if len(sys.argv) > 1 else "SU9"
+    print("PART 2.2")
+    aircraft_type = sys.argv[1] if len(sys.argv) > 1 else "SU9"#default
     result_22 = airports_with_aircraft(aircraft_type)
     print(f"Τύπος αεροσκάφους: {aircraft_type}")
     print(f"Αεροδρόμια που βρέθηκαν: {len(result_22)}")
     for row in result_22:
         print(",".join(map(str, row)))
 
-    # ---- PART 2.3 ----
+    #PART 2.3
     print()
-    print("=" * 50)
-    print("PART 2.3 - PIPELINED & THREE-WAY MERGE JOIN")
-    print("=" * 50)
+    print("PART 2.3")
     r3 = [(1,'b1'),(2,'b2'),(3,'b3'),(4,'b4')]
     s3 = [(1,'c1'),(1,'c2'),(2,'c3'),(3,'c4')]
     t3 = [(1,'d1'),(2,'d2'),(3,'d3'),(5,'d4')]
