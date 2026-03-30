@@ -137,11 +137,10 @@ def airports_with_aircraft(aircraft_type):
     with open("routes.dat", encoding="utf-8") as f:
         reader = csv.reader(f)
         for parts in reader:
-            if len(parts) > 8 and parts[5] != "\\N" and aircraft_type in parts[8].strip():
+            if len(parts) > 8 and parts[5] != "\\N" and aircraft_type in parts[-1].strip().split():
                 routes.append((int(parts[5]), ",".join(parts)))
 
     # Sort-merge join
-    airports
     routes_sorted = sorted(routes, key=lambda x: x[0])
 
     i = j = 0
@@ -183,23 +182,29 @@ def pipelined_merge_join(r, s, t):
 
             a = r[i][0]
 
+            # πάρε όλα τα r με ίδιο key
+            r_matches = []
+            while i < len(r) and r[i][0] == a:
+                r_matches.append(r[i])
+                i += 1
+
+            # πάρε όλα τα s με ίδιο key
             s_matches = []
-            j_temp = j
+            while j < len(s) and s[j][0] == a:
+                s_matches.append(s[j])
+                j += 1
 
-            while j_temp < len(s) and s[j_temp][0] == a:
-                s_matches.append(s[j_temp])
-                j_temp += 1
-
+            # φέρε k στο σωστό σημείο
             while k < len(t) and t[k][0] < a:
                 k += 1
 
             if k < len(t) and t[k][0] == a:
-
-                for s_tuple in s_matches:
-                    result.append((a, r[i][1], s_tuple[1], t[k][1]))
-
-            i += 1
-
+                k_temp = k
+                while k_temp < len(t) and t[k_temp][0] == a:
+                    for r_tuple in r_matches:
+                        for s_tuple in s_matches:
+                            result.append((a, r_tuple[1], s_tuple[1], t[k_temp][1]))
+                    k_temp += 1
         elif r[i][0] < s[j][0]:
             i += 1
         else:

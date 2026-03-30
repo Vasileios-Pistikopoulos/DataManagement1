@@ -1,0 +1,317 @@
+import sys
+import csv
+
+# -----------------------------
+# PART 2.1 - SEMIJOIN
+# -----------------------------
+
+def sort_merge_semijoin(r, s):
+    r_sorted = sorted(r, key=lambda x: x[0])
+    s_sorted = sorted(s, key=lambda x: x[0])
+
+    i = j = 0
+    result = []
+
+    while i < len(r_sorted) and j < len(s_sorted):
+        if r_sorted[i][0] == s_sorted[j][0]:
+            key = r_sorted[i][0]
+            while i < len(r_sorted) and r_sorted[i][0] == key:
+                result.append(r_sorted[i])
+                i += 1
+            while j < len(s_sorted) and s_sorted[j][0] == key:
+                j += 1
+        elif r_sorted[i][0] < s_sorted[j][0]:
+            i += 1
+        else:
+            j += 1
+
+    return result
+
+
+def hash_semijoin(r, s):
+    s_keys = {t[0] for t in s}
+    return [t for t in r if t[0] in s_keys]
+
+
+# -----------------------------
+# PART 2.1 - ANTI-SEMIJOIN
+# -----------------------------
+
+def sort_merge_antisemijoin(r, s):
+    r_sorted = sorted(r, key=lambda x: x[0])
+    s_sorted = sorted(s, key=lambda x: x[0])
+
+    i = j = 0
+    result = []
+
+    while i < len(r_sorted) and j < len(s_sorted):
+        if r_sorted[i][0] == s_sorted[j][0]:
+            key = r_sorted[i][0]
+            while i < len(r_sorted) and r_sorted[i][0] == key:
+                i += 1
+            while j < len(s_sorted) and s_sorted[j][0] == key:
+                j += 1
+        elif r_sorted[i][0] < s_sorted[j][0]:
+            result.append(r_sorted[i])
+            i += 1
+        else:
+            j += 1
+
+    while i < len(r_sorted):
+        result.append(r_sorted[i])
+        i += 1
+
+    return result
+
+
+def hash_antisemijoin(r, s):
+    s_keys = {t[0] for t in s}
+    return [t for t in r if t[0] not in s_keys]
+
+
+# -----------------------------
+# LOAD DATA
+# -----------------------------
+
+def load_airports():
+    """Join key: parts[0] = αριθμητικός ID αεροδρομίου (1ο πεδίο)"""
+    r = []
+    with open("airports.dat", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for parts in reader:
+            if len(parts) > 0 and parts[0] not in ("\\N", ""):
+                try:
+                    r.append((int(parts[0]), parts))
+                except ValueError:
+                    continue
+    return r
+
+
+def load_routes():
+    """Join key: parts[5] = αριθμητικός ID προορισμού (6ο πεδίο)"""
+    s = []
+    with open("routes.dat", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for parts in reader:
+            if len(parts) > 5 and parts[5] not in ("\\N", ""):
+                try:
+                    s.append((int(parts[5]), parts))
+                except ValueError:
+                    continue
+    return s
+
+
+# -----------------------------
+# PART 2.2 - SELECTION + SORT-MERGE SEMIJOIN
+# -----------------------------
+
+def airports_with_aircraft(aircraft_type):
+    """
+    Selection: routes με τον συγκεκριμένο τύπο αεροσκάφους (τελευταίο πεδίο)
+    Join key: airports parts[0], routes parts[5] (αριθμητικοί IDs)
+    Αλγόριθμος: sort-merge semijoin
+    """
+    airports = []
+    with open("airports.dat", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for parts in reader:
+            if len(parts) > 0 and parts[0] not in ("\\N", ""):
+                try:
+                    airports.append((int(parts[0]), parts))
+                except ValueError:
+                    continue
+
+    # selection πρώτα, μετά sort
+    routes = []
+    with open("routes.dat", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        for parts in reader:
+            if (len(parts) > 5 and parts[5] not in ("\\N", "")
+                    and aircraft_type in parts[-1].strip().split()):
+                try:
+                    routes.append((int(parts[5]), parts))
+                except ValueError:
+                    continue
+
+    routes_sorted   = sorted(routes,   key=lambda x: x[0])
+
+    i = j = 0
+    result = []
+
+    while i < len(airports) and j < len(routes_sorted):
+        airport_id = airports[i][0]
+        route_dest = routes_sorted[j][0]
+
+        if airport_id == route_dest:
+            result.append(airports[i][1])
+            i += 1
+            while j < len(routes_sorted) and routes_sorted[j][0] == airport_id:
+                j += 1
+        elif airport_id < route_dest:
+            i += 1
+        else:
+            j += 1
+
+    return result
+
+
+# -----------------------------
+# PART 2.3 - PIPELINED MERGE JOIN
+# -----------------------------
+
+def pipelined_merge_join(r, s, t):
+    """
+    join(r,s) με pipeline: κάθε πλειάδα join(r,s) συνενώνεται
+    αμέσως με t χωρίς αποθήκευση ενδιάμεσου αποτελέσματος.
+    Προϋπόθεση: r, s, t ταξινομημένα ως προς A.
+    Σχήματα: R(A,B), S(A,C), T(A,D) → F(A,B,C,D)
+    """
+    result = []
+    i = j = k = 0
+
+    while i < len(r) and j < len(s):
+        if r[i][0] == s[j][0]:
+            key = r[i][0]
+
+            r_group = []
+            while i < len(r) and r[i][0] == key:
+                r_group.append(r[i])
+                i += 1
+
+            s_group = []
+            while j < len(s) and s[j][0] == key:
+                s_group.append(s[j])
+                j += 1
+
+            while k < len(t) and t[k][0] < key:
+                k += 1
+
+            # pipeline: αμέσως join με t, χωρίς αποθήκευση join(r,s)
+            if k < len(t) and t[k][0] == key:
+                k_temp = k
+                while k_temp < len(t) and t[k_temp][0] == key:
+                    for r_tuple in r_group:
+                        for s_tuple in s_group:
+                            result.append((key, r_tuple[1], s_tuple[1], t[k_temp][1]))
+                    k_temp += 1
+
+        elif r[i][0] < s[j][0]:
+            i += 1
+        else:
+            j += 1
+
+    return result
+
+
+# -----------------------------
+# PART 2.3 - THREE-WAY SORT-MERGE JOIN
+# -----------------------------
+
+def three_way_sort_merge_join(r, s, t):
+    """
+    Sort-merge join σε τρεις εισόδους ταυτόχρονα.
+    Προϋπόθεση: r, s, t ταξινομημένα ως προς A.
+    Σχήματα: R(A,B), S(A,C), T(A,D) → F(A,B,C,D)
+    """
+    i = j = k = 0
+    result = []
+
+    while i < len(r) and j < len(s) and k < len(t):
+        a_r = r[i][0]
+        a_s = s[j][0]
+        a_t = t[k][0]
+
+        if a_r == a_s == a_t:
+            key = a_r
+
+            r_group = []
+            while i < len(r) and r[i][0] == key:
+                r_group.append(r[i])
+                i += 1
+
+            s_group = []
+            while j < len(s) and s[j][0] == key:
+                s_group.append(s[j])
+                j += 1
+
+            t_group = []
+            while k < len(t) and t[k][0] == key:
+                t_group.append(t[k])
+                k += 1
+
+            for r_t in r_group:
+                for s_t in s_group:
+                    for t_t in t_group:
+                        result.append((key, r_t[1], s_t[1], t_t[1]))
+        else:
+            min_key = min(a_r, a_s, a_t)
+            if a_r == min_key:
+                i += 1
+            if a_s == min_key:
+                j += 1
+            if a_t == min_key:
+                k += 1
+
+    return result
+
+
+# -----------------------------
+# MAIN
+# -----------------------------
+
+if __name__ == "__main__":
+
+    # ---- PART 2.1: test με μικρό παράδειγμα ----
+    print("=" * 50)
+    print("PART 2.1 - TEST")
+    print("=" * 50)
+    r_test = [(1,2),(1,4),(2,5)]
+    s_test = [(1,'a'),(1,'c'),(3,'a')]
+    print("r =", r_test)
+    print("s =", s_test)
+    print("sort_merge_semijoin:    ", sort_merge_semijoin(r_test, s_test))
+    print("hash_semijoin:          ", hash_semijoin(r_test, s_test))
+    print("sort_merge_antisemijoin:", sort_merge_antisemijoin(r_test, s_test))
+    print("hash_antisemijoin:      ", hash_antisemijoin(r_test, s_test))
+
+    # ---- PART 2.1: πραγματικά δεδομένα ----
+    print()
+    print("=" * 50)
+    print("PART 2.1 - REAL DATA")
+    print("=" * 50)
+    airports = load_airports()
+    routes   = load_routes()
+    print(f"sort_merge_semijoin:     {len(sort_merge_semijoin(airports, routes))} αεροδρόμια")
+    print(f"hash_semijoin:           {len(hash_semijoin(airports, routes))} αεροδρόμια")
+    print(f"sort_merge_antisemijoin: {len(sort_merge_antisemijoin(airports, routes))} αεροδρόμια")
+    print(f"hash_antisemijoin:       {len(hash_antisemijoin(airports, routes))} αεροδρόμια")
+
+    # ---- PART 2.2 ----
+    print()
+    print("=" * 50)
+    print("PART 2.2 - SELECTION + SORT-MERGE SEMIJOIN")
+    print("=" * 50)
+    aircraft_type = sys.argv[1] if len(sys.argv) > 1 else "SU9"
+    result_22 = airports_with_aircraft(aircraft_type)
+    print(f"Τύπος αεροσκάφους: {aircraft_type}")
+    print(f"Αεροδρόμια που βρέθηκαν: {len(result_22)}")
+    for row in result_22:
+        print(",".join(row))
+
+    # ---- PART 2.3 ----
+    print()
+    print("=" * 50)
+    print("PART 2.3 - PIPELINED & THREE-WAY MERGE JOIN")
+    print("=" * 50)
+    r3 = [(1,'b1'),(2,'b2'),(3,'b3'),(4,'b4')]
+    s3 = [(1,'c1'),(1,'c2'),(2,'c3'),(3,'c4')]
+    t3 = [(1,'d1'),(2,'d2'),(3,'d3'),(5,'d4')]
+    print("r =", r3)
+    print("s =", s3)
+    print("t =", t3)
+    print("\npipelined_merge_join(r,s,t):")
+    for row in pipelined_merge_join(r3, s3, t3):
+        print(" ", row)
+    print("\nthree_way_sort_merge_join(r,s,t):")
+    for row in three_way_sort_merge_join(r3, s3, t3):
+        print(" ", row)
